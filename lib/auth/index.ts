@@ -1,12 +1,14 @@
 import api, { saveTokens, clearTokens, getAccessToken } from "../api/client";
 
-export interface AuthState {
-    isAuthenticated: boolean;
-    isLoading: boolean;
-}
-
 export async function login(username: string, password: string): Promise<void> {
-    const { data } = await api.post("/api/auth/login", { username, password });
+    // OAuth2PasswordRequestForm ожидает application/x-www-form-urlencoded
+    const params = new URLSearchParams();
+    params.append("username", username);
+    params.append("password", password);
+
+    const { data } = await api.post("/api/auth/login", params.toString(), {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
     await saveTokens(data.access_token, data.refresh_token);
 }
 
