@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends
@@ -85,13 +85,26 @@ class PullResponse(BaseModel):
     server_time: str
 
 
+# ── Хелпер нормализации timezone ───────────────────────────────────────────
+
+def _as_utc(dt: datetime) -> datetime:
+    """Приводим datetime к UTC (offset-aware) для корректного сравнения."""
+    if dt is None:
+        return dt
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 # ── Хелпер upsert ─────────────────────────────────────────────────────────
 
 def _upsert(session: Session, model_cls, payload_dict: dict, user_id: str):
     existing = session.get(model_cls, payload_dict["id"])
     if existing:
-        # Обновляем только если запись на клиенте новее
-        if payload_dict["updated_at"] >= existing.updated_at:
+        # Нормализуем обе стороны перед сравнением
+        client_updated = _as_utc(payload_dict["updated_at"])
+        server_updated = _as_utc(existing.updated_at)
+        if client_updated >= server_updated:
             for k, v in payload_dict.items():
                 setattr(existing, k, v)
             existing.user_id = user_id
@@ -134,7 +147,7 @@ def pull(
     def q(model_cls):
         query = select(model_cls).where(model_cls.user_id == uid)
         if since:
-            since_dt = datetime.fromisoformat(since)
+            since_dt = _as_utc(datetime.fromisoformat(since))
             query = query.where(model_cls.updated_at >= since_dt)
         return session.exec(query).all()
 
@@ -143,5 +156,5 @@ def pull(
         notes=[NotePayload(**n.__dict__) for n in q(Note)],
         sections=[SectionPayload(**s.__dict__) for s in q(Section)],
         emotion_logs=[EmotionLogPayload(**e.__dict__) for e in q(EmotionLog)],
-        server_time=datetime.utcnow().isoformat(),
+        server_time=datetime.now(timezone.utc).isoformat(),
     )
