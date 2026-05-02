@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { db } from "../lib/db/client";
 import { tasks, emotionLogs, notes, sections } from "../lib/db/schema";
 import { isNull } from "drizzle-orm";
+import { logout } from "../lib/auth";
+import { sync } from "../lib/sync";
 
 const VERSION = "1.0.0-mvp";
 
@@ -12,6 +14,7 @@ type SettingsItem = {
     icon: string;
     onPress: () => void;
     muted?: boolean;
+    danger?: boolean;
 };
 
 type SettingsGroup = {
@@ -36,6 +39,30 @@ export default function SettingsScreen() {
         console.log(JSON.stringify({ tasks: t, emotionLogs: e, notes: n, sections: s, exportedAt: new Date().toISOString() }, null, 2));
     };
 
+    const handleSync = async () => {
+        Alert.alert("Синхронизация", "Запускаю...");
+        await sync();
+        Alert.alert("Готово", "Синхронизация завершена");
+    };
+
+    const handleLogout = () => {
+        Alert.alert(
+            "Выйти из аккаунта?",
+            "Токен будет удалён. Локальные данные останутся на устройстве.",
+            [
+                { text: "Отмена", style: "cancel" },
+                {
+                    text: "Выйти",
+                    style: "destructive",
+                    onPress: async () => {
+                        await logout();
+                        router.replace("/(auth)/login");
+                    },
+                },
+            ]
+        );
+    };
+
     const groups: SettingsGroup[] = [
         {
             title: "Данные",
@@ -46,12 +73,7 @@ export default function SettingsScreen() {
         {
             title: "Синхронизация",
             items: [
-                {
-                    label: "Сервер не настроен",
-                    icon: "☁️",
-                    muted: true,
-                    onPress: () => Alert.alert("Этап 3", "Синхронизация будет добавлена в Этапе 3."),
-                },
+                { label: "Синхронизировать сейчас", icon: "☁️", onPress: handleSync },
             ],
         },
         {
@@ -63,6 +85,12 @@ export default function SettingsScreen() {
                     muted: true,
                     onPress: () => Alert.alert("Этап 4", "Биометрия будет добавлена в Этапе 4."),
                 },
+            ],
+        },
+        {
+            title: "Аккаунт",
+            items: [
+                { label: "Выйти", icon: "🚪", danger: true, onPress: handleLogout },
             ],
         },
         {
@@ -107,10 +135,14 @@ export default function SettingsScreen() {
                                     }}
                                 >
                                     <Text style={{ fontSize: 18 }}>{item.icon}</Text>
-                                    <Text style={{ flex: 1, color: item.muted ? "#7d766d" : "#ece6dc", fontSize: 15 }}>
+                                    <Text style={{
+                                        flex: 1,
+                                        color: item.danger ? "#e05c5c" : item.muted ? "#7d766d" : "#ece6dc",
+                                        fontSize: 15,
+                                    }}>
                                         {item.label}
                                     </Text>
-                                    {!item.muted && <Text style={{ color: "#7d766d" }}>›</Text>}
+                                    {!item.muted && !item.danger && <Text style={{ color: "#7d766d" }}>›</Text>}
                                 </TouchableOpacity>
                             ))}
                         </View>
