@@ -3,6 +3,9 @@ import * as SecureStore from "expo-secure-store";
 
 const BIOMETRICS_ENABLED_KEY = "biometrics_enabled";
 
+// Глобальный флаг: идёт ручной аутентификация (из настроек)
+export let manualAuthInProgress = false;
+
 export async function isBiometricsAvailable(): Promise<boolean> {
     const compatible = await LocalAuthentication.hasHardwareAsync();
     if (!compatible) return false;

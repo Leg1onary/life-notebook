@@ -12,7 +12,9 @@ import {
     isBiometricsEnabled,
     setBiometricsEnabled,
     authenticate,
+    manualAuthInProgress,
 } from "../lib/biometrics";
+import * as biometrics from "../lib/biometrics";
 
 const VERSION = "1.0.0-mvp";
 
@@ -28,9 +30,14 @@ export default function SettingsScreen() {
 
     const handleToggleBio = async (value: boolean) => {
         if (value) {
-            // Просим подтвердить перед включением
-            const ok = await authenticate();
-            if (!ok) return;
+            biometrics.manualAuthInProgress = true;
+            try {
+                const ok = await authenticate();
+                if (!ok) return;
+            } finally {
+                // Сбрасываем флаг через 100мс после того как AppState успеет сработать
+                setTimeout(() => { biometrics.manualAuthInProgress = false; }, 500);
+            }
         }
         await setBiometricsEnabled(value);
         setBioEnabled(value);
@@ -82,19 +89,16 @@ export default function SettingsScreen() {
                     <Text style={{ color: "#ece6dc", fontSize: 24, fontWeight: "700" }}>Настройки</Text>
                 </View>
 
-                {/* Данные */}
                 <SectionTitle title="Данные" />
                 <SettingsCard>
                     <SettingsRow icon="📤" label="Экспорт данных (JSON)" onPress={handleExport} />
                 </SettingsCard>
 
-                {/* Синхронизация */}
                 <SectionTitle title="Синхронизация" />
                 <SettingsCard>
                     <SettingsRow icon="☁️" label="Синхронизировать сейчас" onPress={handleSync} />
                 </SettingsCard>
 
-                {/* Безопасность */}
                 <SectionTitle title="Безопасность" />
                 <SettingsCard>
                     <View style={{
@@ -120,7 +124,6 @@ export default function SettingsScreen() {
                     </View>
                 </SettingsCard>
 
-                {/* Аккаунт */}
                 <SectionTitle title="Аккаунт" />
                 <SettingsCard>
                     <TouchableOpacity
@@ -132,7 +135,6 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                 </SettingsCard>
 
-                {/* О приложении */}
                 <SectionTitle title="О приложении" />
                 <SettingsCard>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14 }}>

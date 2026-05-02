@@ -9,6 +9,7 @@ import { useSectionStore } from "../lib/store/sectionStore";
 import { isLoggedIn } from "../lib/auth";
 import { sync } from "../lib/sync";
 import { authenticate, isBiometricsAvailable, isBiometricsEnabled } from "../lib/biometrics";
+import * as biometrics from "../lib/biometrics";
 
 export default function RootLayout() {
     const seedDefaults = useSectionStore((s) => s.seedDefaults);
@@ -62,9 +63,15 @@ export default function RootLayout() {
 
             if (!comingToForeground) return;
 
-            // Пропускаем первый раз — уже обработан в init()
+            // Пропускаем первый раз — старт приложения
             if (justLaunched.current) {
                 justLaunched.current = false;
+                sync();
+                return;
+            }
+
+            // Пропускаем если идёт ручная аутентификация из настроек
+            if (biometrics.manualAuthInProgress) {
                 sync();
                 return;
             }
