@@ -10,8 +10,9 @@ services:
       POSTGRES_DB: lifenotebook
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # порт наружу не нужен — db доступна только внутри docker сети
+    # ports:
+    #   - "5432:5432"
 
   api:
     build: ./api
@@ -22,8 +23,17 @@ services:
       - ./api/.env
     environment:
       DATABASE_URL: postgresql://lifenotebook:secret@db:5432/lifenotebook
-    ports:
-      - "8000:8000"
+    # порт наружу не нужен — nginx проксирует напрямую
+    # ports:
+    #   - "8000:8000"
+    networks:
+      - default
+      - nginxforge_net
+
+networks:
+  nginxforge_net:
+    external: true
+    name: nginxforge_nginxforge_net
 
 volumes:
   postgres_data:
