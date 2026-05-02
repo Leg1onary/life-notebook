@@ -17,6 +17,7 @@ export default function RootLayout() {
     const appState = useRef<AppStateStatus>(AppState.currentState);
     const [ready, setReady] = useState(false);
     const [locked, setLocked] = useState(false);
+    const justLaunched = useRef(true);
 
     const unlock = async () => {
         const success = await authenticate();
@@ -38,7 +39,6 @@ export default function RootLayout() {
             }
 
             if (loggedIn) {
-                // Биометрия при старте
                 const available = await isBiometricsAvailable();
                 const enabled = await isBiometricsEnabled();
                 if (available && enabled) {
@@ -53,20 +53,30 @@ export default function RootLayout() {
         init().catch(console.error);
     }, []);
 
-    // Блокировка при возвращении из фона
     useEffect(() => {
         const sub = AppState.addEventListener("change", async (next) => {
-            if (appState.current.match(/inactive|background/) && next === "active") {
-                const available = await isBiometricsAvailable();
-                const enabled = await isBiometricsEnabled();
-                if (available && enabled) {
-                    setLocked(true);
-                    const success = await authenticate();
-                    if (success) setLocked(false);
-                }
-                sync();
-            }
+            const comingToForeground =
+                appState.current.match(/inactive|background/) && next === "active";
+
             appState.current = next;
+
+            if (!comingToForeground) return;
+
+            // Пропускаем первый раз — уже обработан в init()
+            if (justLaunched.current) {
+                justLaunched.current = false;
+                sync();
+                return;
+            }
+
+            const available = await isBiometricsAvailable();
+            const enabled = await isBiometricsEnabled();
+            if (available && enabled) {
+                setLocked(true);
+                const success = await authenticate();
+                if (success) setLocked(false);
+            }
+            sync();
         });
         return () => sub.remove();
     }, []);
