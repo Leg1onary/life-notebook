@@ -4,6 +4,7 @@ import { emotionLogs } from "../db/schema";
 import { isNull, desc } from "drizzle-orm";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { scheduleSync } from "../sync";
 
 export type EmotionCategory = "joy" | "anger" | "sadness" | "fear" | "shame" | "calm" | "other";
 
@@ -68,6 +69,7 @@ export const useEmotionStore = create<EmotionStore>((set, get) => ({
             isSynced: false,
         });
         await get().loadLogs();
+        scheduleSync();
     },
 
     deleteLog: async (id) => {
@@ -77,5 +79,6 @@ export const useEmotionStore = create<EmotionStore>((set, get) => ({
             .set({ deletedAt: now, updatedAt: now, isSynced: false })
             .where(eq(emotionLogs.id, id));
         await get().loadLogs();
+        scheduleSync();
     },
 }));

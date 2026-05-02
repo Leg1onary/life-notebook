@@ -4,6 +4,7 @@ import { sections } from "../db/schema";
 import { isNull, asc } from "drizzle-orm";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { scheduleSync } from "../sync";
 
 export interface Section {
     id: string;
@@ -56,6 +57,7 @@ export const useSectionStore = create<SectionStore>((set, get) => ({
             isSynced: false,
         });
         await get().loadSections();
+        scheduleSync();
     },
 
     deleteSection: async (id) => {
@@ -65,6 +67,7 @@ export const useSectionStore = create<SectionStore>((set, get) => ({
             .set({ deletedAt: now, updatedAt: now, isSynced: false })
             .where(eq(sections.id, id));
         await get().loadSections();
+        scheduleSync();
     },
 
     seedDefaults: async () => {

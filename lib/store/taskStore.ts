@@ -4,6 +4,7 @@ import { tasks } from "../db/schema";
 import { eq, isNull, asc } from "drizzle-orm";
 import "react-native-get-random-values";
 import { v4 as uuidv4 } from "uuid";
+import { scheduleSync } from "../sync";
 
 export type TaskCategory = "shopping" | "home" | "car" | "work" | "personal";
 
@@ -55,6 +56,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             isSynced: false,
         });
         await get().loadTasks();
+        scheduleSync();
     },
 
     toggleTask: async (id) => {
@@ -71,6 +73,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             })
             .where(eq(tasks.id, id));
         await get().loadTasks();
+        scheduleSync();
     },
 
     deleteTask: async (id) => {
@@ -80,5 +83,6 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             .set({ deletedAt: now, updatedAt: now, isSynced: false })
             .where(eq(tasks.id, id));
         await get().loadTasks();
+        scheduleSync();
     },
 }));

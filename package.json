@@ -20,6 +20,7 @@
     "expo-linking": "~8.0.12",
     "expo-local-authentication": "~17.0.8",
     "expo-router": "~6.0.23",
+    "expo-secure-store": "~14.0.1",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",
     "nativewind": "^2.0.11",

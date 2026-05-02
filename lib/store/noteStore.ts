@@ -3,6 +3,7 @@ import { db } from "../db/client";
 import { notes } from "../db/schema";
 import { isNull, desc, eq, and } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { scheduleSync } from "../sync";
 
 export interface Note {
     id: string;
@@ -47,6 +48,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
             isSynced: false,
         });
         await get().loadNotes(sectionId);
+        scheduleSync();
     },
 
     updateNote: async (id, title, body) => {
@@ -54,6 +56,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const now = new Date().toISOString();
         await db.update(notes).set({ title, body, updatedAt: now, isSynced: false }).where(eq(notes.id, id));
         await get().loadNotes(note?.sectionId ?? undefined);
+        scheduleSync();
     },
 
     deleteNote: async (id) => {
@@ -61,6 +64,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const now = new Date().toISOString();
         await db.update(notes).set({ deletedAt: now, updatedAt: now, isSynced: false }).where(eq(notes.id, id));
         await get().loadNotes(note?.sectionId ?? undefined);
+        scheduleSync();
     },
 
     togglePin: async (id) => {
@@ -69,5 +73,6 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
         const now = new Date().toISOString();
         await db.update(notes).set({ isPinned: !note.isPinned, updatedAt: now, isSynced: false }).where(eq(notes.id, id));
         await get().loadNotes(note.sectionId ?? undefined);
+        scheduleSync();
     },
 }));
