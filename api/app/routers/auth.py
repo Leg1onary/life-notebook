@@ -61,6 +61,13 @@ def refresh(body: RefreshRequest, session: Session = Depends(get_session)):
     )
 
 
+@router.post("/logout")
+def logout():
+    # JWT stateless — токены живут до истечения срока.
+    # Клиент сам удаляет их из SecureStore.
+    return {"ok": True}
+
+
 @router.get("/me")
 def me(current_user: User = Depends(get_current_user)):
     return {"id": current_user.id, "username": current_user.username}
