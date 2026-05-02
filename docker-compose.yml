@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: lifenotebook
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: lifenotebook
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api:
+    build: ./api
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - ./api/.env
+    environment:
+      DATABASE_URL: postgresql://lifenotebook:secret@db:5432/lifenotebook
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:
